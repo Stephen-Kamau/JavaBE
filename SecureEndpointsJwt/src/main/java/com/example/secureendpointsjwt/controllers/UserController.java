@@ -1,7 +1,9 @@
 package com.example.secureendpointsjwt.controllers;
 
 import com.example.secureendpointsjwt.dtos.AuthRequest;
+import com.example.secureendpointsjwt.dtos.AuthResponse;
 import com.example.secureendpointsjwt.models.UserInfo;
+import com.example.secureendpointsjwt.repos.UserInfoRepository;
 import com.example.secureendpointsjwt.service.JwtService;
 import com.example.secureendpointsjwt.service.UserInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/auth")
 public class UserController {
@@ -21,6 +25,9 @@ public class UserController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private UserInfoRepository userInfoRepository;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -49,10 +56,21 @@ public class UserController {
     }
 
     @PostMapping("/generateToken")
-    public String authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
+    public AuthResponse authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
+        Optional<UserInfo> userInfo =  userInfoRepository.findByName(authRequest.getUsername());
+
+        if (userInfo.isEmpty()){
+            throw new UsernameNotFoundException("an error ocuucred");
+        }
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
         if (authentication.isAuthenticated()) {
-            return jwtService.generateToken(authRequest.getUsername());
+
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setToken(jwtService.generateToken(userInfo.get().getName()));
+            authResponse.setEmail(userInfo.get().getEmail());
+            authResponse.setUsername(userInfo.get().getName());
+
+            return authResponse;
         } else {
             throw new UsernameNotFoundException("invalid user request !");
         }

@@ -25,13 +25,11 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthFilter authFilter;
-
     // User Creation
     @Bean
     public UserDetailsService userDetailsService() {
         return new UserInfoService();
     }
-
     // Configuring HttpSecurity
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
